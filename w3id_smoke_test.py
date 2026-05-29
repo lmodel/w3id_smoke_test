@@ -219,13 +219,17 @@ def build_cases() -> list[Case]:
     add(s, "uco/core slash",         f"{BASE}/uco/core", "text/html",                    303, "https://lmodel.github.io/uco-core")
 
     # ---- Hyphenated repo: nist-ai-rmf (multi-hyphen STEM family) ----
+    # nist-ai-100-1 and nist-ai-600-1 are independent repos (not aliases of
+    # nist-ai-rmf): each has its own hyphen->underscore STEM and publishes its
+    # own artifacts under lmodel/<repo>/...
     s = "Hyphenated repo: nist-ai-rmf (multi-hyphen STEM family)"
     nar_raw = "https://raw.githubusercontent.com/lmodel/nist-ai-rmf/main/project"
     nar_src = "https://raw.githubusercontent.com/lmodel/nist-ai-rmf/main/src/nist_ai_rmf"
+    n61_raw = "https://raw.githubusercontent.com/lmodel/nist-ai-600-1/main/project"
     add(s, "nist-ai-rmf jsonld",       f"{BASE}/nist-ai-rmf/nist_ai_rmf.jsonld", "*/*", 303, f"{nar_raw}/jsonld/nist_ai_rmf.jsonld")
     add(s, "nist-ai-rmf conneg",       f"{BASE}/nist-ai-rmf", "application/yaml",       303, f"{nar_src}/schema/nist_ai_rmf.yaml")
-    add(s, "nist-ai-600-1 alias jsonld", f"{BASE}/nist-ai-600-1/nist_ai_rmf.jsonld", "*/*", 303, f"{nar_raw}/jsonld/nist_ai_rmf.jsonld")
-    add(s, "nist-ai-600-1 alias html",   f"{BASE}/nist-ai-600-1", "text/html",                303, "https://lmodel.github.io/nist-ai-rmf")
+    add(s, "nist-ai-600-1 jsonld", f"{BASE}/nist-ai-600-1/nist_ai_600_1.jsonld", "*/*", 303, f"{n61_raw}/jsonld/nist_ai_600_1.jsonld")
+    add(s, "nist-ai-600-1 html",   f"{BASE}/nist-ai-600-1", "text/html",                303, "https://lmodel.github.io/nist-ai-600-1")
 
     # ---- Docs / gen-doc elements rule (text/html) ----
     s = "Docs / gen-doc elements rule (text/html)"

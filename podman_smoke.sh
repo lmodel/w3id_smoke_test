@@ -44,6 +44,9 @@ trap 'rm -rf "$WORK"; "$ENGINE" rm -f "$NAME" >/dev/null 2>&1 || true' EXIT
 
 mkdir -p "$WORK/lmodel"
 cp "$HTACCESS" "$WORK/lmodel/.htaccess"
+# mktemp -d creates 0700; the container's httpd runs as a different UID and
+# needs +rX on the mount, or every request 403s with "pcfg_openfile: ... is executable".
+chmod -R a+rX "$WORK"
 
 # Minimal httpd.conf override: enable mod_rewrite + AllowOverride All.
 cat > "$WORK/lmodel.conf" <<'CONF'

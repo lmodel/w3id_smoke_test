@@ -1,8 +1,6 @@
 # W3ID Smoke Tester
 
-These scripts exercise W3ID content-negotiation and redirect rules in
-`./lmodel/.htaccess` so you can catch breakage before deploying to
-[w3id.org](https://w3id.org).
+These scripts exercise W3ID persistent identifiers content-negotiation and redirect rules in`./lmodel/.htaccess` to catch breakage before deploying to [w3id.org](https://w3id.org). See [example test report](./TEST_REPORT.md).
 
 ## Requirements
 
