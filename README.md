@@ -1,8 +1,6 @@
 # W3ID Smoke Tester
 
-Test the Perma-id (w3id.org) routing for https://github.com/lmodel.
-
-These scripts exercise the content-negotiation and redirect rules in
+These scripts exercise W3ID content-negotiation and redirect rules in
 `./lmodel/.htaccess` so you can catch breakage before deploying to
 [w3id.org](https://w3id.org).
 
