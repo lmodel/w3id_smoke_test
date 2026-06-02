@@ -151,6 +151,22 @@ def build_cases() -> list[Case]:
     s = "Schema routes"
     add(s, "schema yaml",       f"{BASE}/{REPO}/schema/{STEM}.yaml", "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
     add(s, "schema bare path",  f"{BASE}/{REPO}/schema/anything",    "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
+    add(
+        s,
+        "dpvs nested bare schema path",
+        f"{BASE}/dpvs/schema/modules/consent",
+        "*/*",
+        303,
+        "https://github.com/lmodel/dpvs/blob/main/src/dpvs/schema/modules/consent.yaml",
+    )
+    add(
+        s,
+        "dpvs nested with trailing slash",
+        f"{BASE}/dpvs/schema/modules/consent/",
+        "*/*",
+        303,
+        "https://github.com/lmodel/dpvs/blob/main/src/dpvs/schema/modules/consent.yaml",
+    )
 
     # ---- Multi-file schema (regression) ----
     s = "Multi-file schema (regression)"
