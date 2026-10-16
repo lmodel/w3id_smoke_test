@@ -290,7 +290,7 @@ def ktl_cases() -> list[Case]:
     # (label, namespace path under /ktl/, where the bundle is served, a concept in it)
     bundles = [
         ("knowledge", "knowledge", f"{ktl}/knowledge", "glossary/accession"),
-        ("federation", "federation", f"{fed}/knowledge", "members/gist"),
+        ("federation", "federation/knowledge", f"{fed}/knowledge", "members/gist"),
         ("curator", "curator/knowledge", f"{cur}/knowledge", "glossary/okf"),
         ("registrar", "registrar/knowledge", f"{reg}/knowledge", "glossary/okf"),
     ]
@@ -313,7 +313,10 @@ def ktl_cases() -> list[Case]:
     s = "Sites"
     add(s, "ktl root",             "",                          BROWSER, 302, f"{ktl}/")
     add(s, "ktl page",             "docs/install/",             BROWSER, 302, f"{ktl}/docs/install/")
-    add(s, "federation page",      "federation/docs/architecture/", BROWSER, 302, f"{fed}/docs/architecture/")
+    add(s, "federation root",      "federation/",               BROWSER, 302, f"{fed}/")
+    add(s, "federation site no slash", "federation",            BROWSER, 302, fed)
+    add(s, "federation page",      "federation/docs/architecture", BROWSER, 302, f"{fed}/docs/architecture")
+    add(s, "federation workspace", "federation/workspace/index.md", "*/*", 302, f"{fed}/workspace/index.md")
     add(s, "curator root",         "curator/",                  BROWSER, 302, f"{cur}/")
     add(s, "curator site no slash", "curator",                   BROWSER, 302, cur)
     add(s, "registrar root",       "registrar/",                BROWSER, 302, f"{reg}/")
