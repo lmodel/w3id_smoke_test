@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # Requires Python 3.7+. If `python3` resolves to 3.6 on your system, invoke
 # explicitly:  python3.11 w3id_smoke_test.py
-"""Smoke test for lmodel/.htaccess routing rules.
+"""Smoke test for a w3id.org namespace's .htaccess routing rules.
+
+SUITE names the namespace and so the cases: lmodel (the default) or ktl.
 
 For each case:
   1. Issue a request to the local Apache (BASE) with a given Accept header,
@@ -16,7 +18,8 @@ Naming conventions (per linkml-schema skill + .htaccess):
   BRANCH = git branch                                   -> master (FINOS upstream)
 
 Env vars:
-  BASE       (default http://localhost:18080/lmodel) -- local Apache root
+  SUITE      (default lmodel) -- which namespace's cases to run: lmodel or ktl
+  BASE       (default http://localhost:18080/$SUITE) -- local Apache root
   TIMEOUT    (default 10) -- per-request timeout in seconds
   NO_UPSTREAM=1           -- skip the upstream HEAD check (offline mode)
   ONLY=<substr>           -- run only cases whose description contains <substr>
@@ -33,7 +36,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Optional
 
-BASE = os.environ.get("BASE", "http://localhost:18080/lmodel").rstrip("/")
+SUITE = os.environ.get("SUITE", "lmodel")
+BASE = os.environ.get("BASE", f"http://localhost:18080/{SUITE}").rstrip("/")
 TIMEOUT = float(os.environ.get("TIMEOUT", "10"))
 SKIP_UPSTREAM = os.environ.get("NO_UPSTREAM") == "1"
 ONLY = os.environ.get("ONLY", "")
@@ -118,7 +122,7 @@ def run(case: Case) -> Result:
     return r
 
 
-def build_cases() -> list[Case]:
+def lmodel_cases() -> list[Case]:
     cases: list[Case] = []
 
     def add(section: str, desc: str, url: str, accept: str, status: int, loc: Optional[str]) -> None:
@@ -262,6 +266,71 @@ def build_cases() -> list[Case]:
     add(s, "elements nist-ai-rmf",f"{BASE}/nist-ai-rmf/Risk",       "text/html",             303, "https://lmodel.github.io/nist-ai-rmf/elements/Risk/")
 
     return cases
+
+
+# A browser's Accept header, which carries */* and so must not reach a rule
+# meant for a graph client.
+BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+
+
+def ktl_cases() -> list[Case]:
+    """ids/ktl/.htaccess: four knowledge bundles, each its own namespace, and
+    the sites behind them. Every bundle has the same routes, so one helper
+    writes them; the site rules come after."""
+    cases: list[Case] = []
+    pages = "https://noelmcloughlin.github.io"
+    ktl = f"{pages}/knowledge-trust-ladder"
+    fed = f"{pages}/ktl-federation"
+    cur = f"{pages}/obsidian-ktl-curator"
+    reg = f"{pages}/obsidian-ktl-registrar"
+
+    def add(section: str, desc: str, path: str, accept: str, status: int, loc: Optional[str]) -> None:
+        cases.append(Case(section, desc, f"{BASE}/{path}", accept, status, loc))
+
+    # (label, namespace path under /ktl/, where the bundle is served, a concept in it)
+    bundles = [
+        ("knowledge", "knowledge", f"{ktl}/knowledge", "glossary/accession"),
+        ("federation", "federation/knowledge", f"{fed}/knowledge", "members/gist"),
+        ("curator", "curator/knowledge", f"{cur}/knowledge", "glossary/okf"),
+        ("registrar", "registrar/knowledge", f"{reg}/knowledge", "glossary/okf"),
+    ]
+    for label, ns, site, concept in bundles:
+        s = f"Bundle: {label}"
+        add(s, f"{label} browser",       f"{ns}/", BROWSER,                  303, f"{site}/")
+        add(s, f"{label} no slash",      ns,       BROWSER,                  303, f"{site}/")
+        add(s, f"{label} ld+json",       f"{ns}/", "application/ld+json",    303, f"{site}/concepts.jsonld")
+        add(s, f"{label} turtle",        f"{ns}/", "text/turtle",            303, f"{site}/graph.nt")
+        add(s, f"{label} n-triples",     f"{ns}/", "application/n-triples",  303, f"{site}/graph.nt")
+        add(s, f"{label} concept browser", f"{ns}/{concept}", BROWSER,       303, f"{site}/{concept}/")
+        add(s, f"{label} concept */*",   f"{ns}/{concept}", "*/*",           303, f"{site}/{concept}/")
+        add(s, f"{label} concept ld+json", f"{ns}/{concept}", "application/ld+json", 303, f"{site}/{concept}.jsonld")
+        add(s, f"{label} concept markdown", f"{ns}/{concept}", "text/markdown", 303, f"{site}/{concept}.md")
+        add(s, f"{label} file .jsonld",  f"{ns}/{concept}.jsonld", "*/*",    302, f"{site}/{concept}.jsonld")
+        add(s, f"{label} file graph.nt", f"{ns}/graph.nt", "*/*",            302, f"{site}/graph.nt")
+
+    # The sites: everything that is not a bundle goes to the same path on the
+    # site that holds it, and a sibling never falls to KTL's catch-all.
+    s = "Sites"
+    add(s, "ktl root",             "",                          BROWSER, 302, f"{ktl}/")
+    add(s, "ktl page",             "docs/install/",             BROWSER, 302, f"{ktl}/docs/install/")
+    add(s, "federation root",      "federation/",               BROWSER, 302, f"{fed}/")
+    add(s, "federation site no slash", "federation",            BROWSER, 302, fed)
+    add(s, "federation page",      "federation/docs/architecture", BROWSER, 302, f"{fed}/docs/architecture")
+    add(s, "federation workspace", "federation/workspace/index.md", "*/*", 302, f"{fed}/workspace/index.md")
+    add(s, "curator root",         "curator/",                  BROWSER, 302, f"{cur}/")
+    add(s, "curator site no slash", "curator",                   BROWSER, 302, cur)
+    add(s, "registrar root",       "registrar/",                BROWSER, 302, f"{reg}/")
+    add(s, "registrar site no slash", "registrar",                 BROWSER, 302, reg)
+    return cases
+
+
+SUITES = {"lmodel": lmodel_cases, "ktl": ktl_cases}
+
+
+def build_cases() -> list[Case]:
+    if SUITE not in SUITES:
+        raise SystemExit(f"SUITE={SUITE!r} is not one of {', '.join(SUITES)}")
+    return SUITES[SUITE]()
 
 
 def main() -> int:

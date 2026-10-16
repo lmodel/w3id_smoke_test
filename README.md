@@ -1,6 +1,6 @@
 # W3ID Smoke Tester
 
-These scripts exercise W3ID persistent identifiers content-negotiation and redirect rules in`./lmodel/.htaccess` to catch breakage before deploying to [w3id.org](https://w3id.org). See [example test report](./TEST_REPORT.md).
+These scripts exercise a W3ID namespace's content-negotiation and redirect rules in `ids/<namespace>/.htaccess` to catch breakage before deploying to [w3id.org](https://w3id.org). Two namespaces have suites: `lmodel` and `ktl`. See [example test report](./TEST_REPORT.md).
 
 ## Requirements
 
@@ -12,10 +12,11 @@ These scripts exercise W3ID persistent identifiers content-negotiation and redir
 Spins up a throwaway Apache container with your `.htaccess` mounted, runs the suite against it, and cleans up on exit:
 
 ```bash
-./podman_smoke.sh path/to/lmodel/.htaccess
+./podman_smoke.sh ../w3id.org/ids/lmodel/.htaccess
+./podman_smoke.sh ../w3id.org/ids/ktl/.htaccess
 ```
 
-The path defaults to `../git/hub/w3id.org/lmodel/.htaccess`. Override with env vars: `ENGINE` (default `podman`), `PORT` (`18080`), `IMAGE`, `NAME`, `PYTHON`.
+The `.htaccess` file's folder name is the namespace: it is the path the file is served at and the suite that runs. The path defaults to `../w3id.org/ids/lmodel/.htaccess`. Override with env vars: `ENGINE` (default `podman`), `PORT` (`18080`), `IMAGE`, `NAME`, `PYTHON`.
 
 ## Test any base URL
 
@@ -24,13 +25,15 @@ The path defaults to `../git/hub/w3id.org/lmodel/.htaccess`. Override with env v
 ```bash
 python3 w3id_smoke_test.py                              # local Apache (default)
 BASE=https://w3id.org/lmodel python3 w3id_smoke_test.py # production
+SUITE=ktl BASE=https://w3id.org/ktl python3 w3id_smoke_test.py
 ONLY=turtle python3 w3id_smoke_test.py                  # one case (substring)
 NO_UPSTREAM=1 python3 w3id_smoke_test.py                # skip upstream check
 ```
 
 | Variable      | Default                         | Description                          |
 |---------------|---------------------------------|--------------------------------------|
-| `BASE`        | `http://localhost:18080/lmodel` | Base URL to test against.            |
+| `SUITE`       | `lmodel`                        | Cases to run: `lmodel` or `ktl`.     |
+| `BASE`        | `http://localhost:18080/$SUITE` | Base URL to test against.            |
 | `TIMEOUT`     | `10`                            | Per-request timeout (seconds).       |
 | `NO_UPSTREAM` | _(unset)_                       | Set to `1` to skip the upstream check.|
 | `ONLY`        | _(unset)_                       | Run only cases matching this substring.|
