@@ -274,7 +274,7 @@ BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 
 
 def ktl_cases() -> list[Case]:
-    """ids/ktl/.htaccess: four knowledge bundles, each its own namespace, and
+    """ids/ktl/.htaccess: five knowledge bundles, each its own namespace, and
     the sites behind them. Every bundle has the same routes, so one helper
     writes them; the site rules come after."""
     cases: list[Case] = []
@@ -283,6 +283,7 @@ def ktl_cases() -> list[Case]:
     fed = f"{pages}/ktl-federation"
     cur = f"{pages}/obsidian-ktl-curator"
     reg = f"{pages}/obsidian-ktl-registrar"
+    lsc = f"{pages}/linkml-sidecar"
 
     def add(section: str, desc: str, path: str, accept: str, status: int, loc: Optional[str]) -> None:
         cases.append(Case(section, desc, f"{BASE}/{path}", accept, status, loc))
@@ -293,6 +294,7 @@ def ktl_cases() -> list[Case]:
         ("federation", "federation/knowledge", f"{fed}/knowledge", "members/gist"),
         ("curator", "curator/knowledge", f"{cur}/knowledge", "glossary/okf"),
         ("registrar", "registrar/knowledge", f"{reg}/knowledge", "glossary/okf"),
+        ("linkml-sidecar", "linkml-sidecar/knowledge", f"{lsc}/knowledge", "glossary/sidecar"),
     ]
     for label, ns, site, concept in bundles:
         s = f"Bundle: {label}"
@@ -321,6 +323,9 @@ def ktl_cases() -> list[Case]:
     add(s, "curator site no slash", "curator",                   BROWSER, 302, cur)
     add(s, "registrar root",       "registrar/",                BROWSER, 302, f"{reg}/")
     add(s, "registrar site no slash", "registrar",                 BROWSER, 302, reg)
+    add(s, "linkml-sidecar root",  "linkml-sidecar/",           BROWSER, 302, f"{lsc}/")
+    add(s, "linkml-sidecar site no slash", "linkml-sidecar",       BROWSER, 302, lsc)
+    add(s, "linkml-sidecar page",  "linkml-sidecar/health/",    BROWSER, 302, f"{lsc}/health/")
     return cases
 
 
