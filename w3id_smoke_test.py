@@ -16,6 +16,7 @@ Naming conventions (per linkml-schema skill + .htaccess):
   REPO   = URL segment / GitHub repo name (kebab-case)  -> common-domain-model
   STEM   = artifact filename stem        (snake_case)   -> common_domain_model
   BRANCH = git branch                                   -> master (FINOS upstream)
+  SIDECAR = the folder that holds the LinkML project    -> .linkml/
 
 Env vars:
   SUITE      (default lmodel) -- which namespace's cases to run: lmodel or ktl
@@ -45,8 +46,9 @@ ONLY = os.environ.get("ONLY", "")
 REPO = "common-domain-model"
 STEM = "common_domain_model"
 BRANCH = "master"
-RAW = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/project"
-SRC = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/src/{STEM}"
+SIDECAR = ".linkml/"  # the LinkML project sits in a sidecar beside FINOS's tree
+RAW = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/{SIDECAR}project"
+SRC = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/{SIDECAR}src/{STEM}"
 
 
 @dataclass
@@ -139,7 +141,8 @@ def lmodel_cases() -> list[Case]:
     add(s, "cdm text/yaml",     f"{BASE}/{REPO}", "text/yaml",               303, f"{SRC}/schema/{STEM}.yaml")
     add(s, "cdm html",          f"{BASE}/{REPO}", "text/html",               303, f"https://lmodel.github.io/{REPO}")
     add(s, "cdm */*",           f"{BASE}/{REPO}", "*/*",                     302, f"https://lmodel.github.io/{REPO}")
-    add(s, "cdm unsupported",   f"{BASE}/{REPO}", "application/zip",         406, None)
+    add(s, "cdm unsupported",   f"{BASE}/{REPO}", "application/zip",         302, f"https://lmodel.github.io/{REPO}")
+    add(s, "cdm wildcard range",f"{BASE}/{REPO}", "application/*",           302, f"https://lmodel.github.io/{REPO}")
 
     # ---- Conneg (trailing slash) ----
     s = "Conneg (trailing slash)"
