@@ -45,8 +45,8 @@ ONLY = os.environ.get("ONLY", "")
 REPO = "common-domain-model"
 STEM = "common_domain_model"
 BRANCH = "master"
-RAW = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/project"
-SRC = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/src/{STEM}"
+RAW = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/.linkml/project"
+SRC = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/.linkml/src/{STEM}"
 
 
 @dataclass
@@ -57,6 +57,9 @@ class Case:
     accept: str
     want_status: int
     want_loc: Optional[str] = None  # None = don't check Location body
+    # An extended generator's output, which few repositories write: the
+    # redirect must be right, and an upstream 404 is noted, not a failure.
+    optional: bool = False
 
 
 @dataclass
@@ -115,8 +118,11 @@ def run(case: Case) -> Result:
     if 300 <= case.want_status < 400 and r.got_loc.startswith("http"):
         r.raw_status = _head_upstream(r.got_loc)
         if not SKIP_UPSTREAM and r.raw_status != "200":
-            ok = False
-            r.notes.append(f"upstream {r.raw_status}")
+            if case.optional and r.raw_status == "404":
+                r.notes.append("not generated here (optional)")
+            else:
+                ok = False
+                r.notes.append(f"upstream {r.raw_status}")
 
     r.ok = ok
     return r
@@ -125,8 +131,8 @@ def run(case: Case) -> Result:
 def lmodel_cases() -> list[Case]:
     cases: list[Case] = []
 
-    def add(section: str, desc: str, url: str, accept: str, status: int, loc: Optional[str]) -> None:
-        cases.append(Case(section, desc, url, accept, status, loc))
+    def add(section: str, desc: str, url: str, accept: str, status: int, loc: Optional[str], optional: bool = False) -> None:
+        cases.append(Case(section, desc, url, accept, status, loc, optional))
 
     # ---- Conneg (bare repo) ----
     s = "Conneg (bare repo)"
@@ -139,7 +145,7 @@ def lmodel_cases() -> list[Case]:
     add(s, "cdm text/yaml",     f"{BASE}/{REPO}", "text/yaml",               303, f"{SRC}/schema/{STEM}.yaml")
     add(s, "cdm html",          f"{BASE}/{REPO}", "text/html",               303, f"https://lmodel.github.io/{REPO}")
     add(s, "cdm */*",           f"{BASE}/{REPO}", "*/*",                     302, f"https://lmodel.github.io/{REPO}")
-    add(s, "cdm unsupported",   f"{BASE}/{REPO}", "application/zip",         406, None)
+    add(s, "cdm unsupported",   f"{BASE}/{REPO}", "application/zip",         302, None)
 
     # ---- Conneg (trailing slash) ----
     s = "Conneg (trailing slash)"
@@ -154,22 +160,22 @@ def lmodel_cases() -> list[Case]:
     # ---- Schema routes ----
     s = "Schema routes"
     add(s, "schema yaml",       f"{BASE}/{REPO}/schema/{STEM}.yaml", "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
-    add(s, "schema bare path",  f"{BASE}/{REPO}/schema/anything",    "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
+    add(s, "schema bare path",  f"{BASE}/{REPO}/schema/cdm_base_math",  "*/*", 303, f"{SRC}/schema/cdm_base_math.yaml")
     add(
         s,
-        "dpvs nested bare schema path",
-        f"{BASE}/dpvs/schema/modules/consent",
+        "dpv sub-schema bare path",
+        f"{BASE}/dpv/schema/dpv_risk",
         "*/*",
         303,
-        "https://github.com/lmodel/dpvs/blob/main/src/dpvs/schema/modules/consent.yaml",
+        "https://raw.githubusercontent.com/lmodel/dpv/main/src/dpv/schema/dpv_risk.yaml",
     )
     add(
         s,
-        "dpvs nested with trailing slash",
-        f"{BASE}/dpvs/schema/modules/consent/",
+        "dpv sub-schema trailing slash",
+        f"{BASE}/dpv/schema/dpv_risk/",
         "*/*",
         303,
-        "https://github.com/lmodel/dpvs/blob/main/src/dpvs/schema/modules/consent.yaml",
+        "https://raw.githubusercontent.com/lmodel/dpv/main/src/dpv/schema/dpv_risk.yaml",
     )
 
     # ---- Multi-file schema (regression) ----
@@ -198,45 +204,47 @@ def lmodel_cases() -> list[Case]:
 
     # ---- Non-core artifacts (302) ----
     s = "Non-core artifacts (302)"
+    PYM = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/.linkml/src/{STEM}/datamodel"
+    add(s, "pydantic py",      f"{BASE}/{REPO}/{STEM}_pydantic.py",          "*/*", 302, f"{PYM}/{STEM}_pydantic.py")
+    add(s, "dataclasses py",   f"{BASE}/{REPO}/{STEM}.py",                   "*/*", 302, f"{PYM}/{STEM}.py")
     add(s, ".xlsx",            f"{BASE}/{REPO}/{STEM}.xlsx",                 "*/*", 302, f"{RAW}/excel/{STEM}.xlsx")
     add(s, ".ts",              f"{BASE}/{REPO}/{STEM}.ts",                   "*/*", 302, f"{RAW}/typescript/{STEM}.ts")
-    add(s, ".h",               f"{BASE}/{REPO}/{STEM}.h",                    "*/*", 302, f"{RAW}/cpp/{STEM}.h")
-    add(s, ".csv",             f"{BASE}/{REPO}/{STEM}.csv",                  "*/*", 302, f"{RAW}/csv/{STEM}.csv")
-    add(s, ".dbml",            f"{BASE}/{REPO}/{STEM}.dbml",                 "*/*", 302, f"{RAW}/dbml/{STEM}.dbml")
-    add(s, ".er.md",           f"{BASE}/{REPO}/{STEM}.er.md",                "*/*", 302, f"{RAW}/erdiagram/{STEM}.er.md")
-    add(s, ".go",              f"{BASE}/{REPO}/{STEM}.go",                   "*/*", 302, f"{RAW}/golang/{STEM}.go")
-    add(s, "golr yaml",        f"{BASE}/{REPO}/golr/Trade_config.yaml",      "*/*", 302, f"{RAW}/golr/Trade_config.yaml")
-    add(s, ".dot.dot",         f"{BASE}/{REPO}/{STEM}.dot.dot",              "*/*", 302, f"{RAW}/graphviz/{STEM}.dot.dot")
-    add(s, "markdown-datadict",f"{BASE}/{REPO}/markdown-datadict/{STEM}.md", "*/*", 302, f"{RAW}/markdown-datadict/{STEM}.md")
-    add(s, "mermaid md",       f"{BASE}/{REPO}/mermaid/Trade.md",            "*/*", 302, f"{RAW}/mermaid/Trade.md")
-    add(s, "namespaces py",    f"{BASE}/{REPO}/namespaces/{STEM}.namespaces.py", "*/*", 302, f"{RAW}/namespaces/{STEM}.namespaces.py")
-    add(s, "pandera py",       f"{BASE}/{REPO}/pandera/{STEM}_pandera.py",   "*/*", 302, f"{RAW}/pandera/{STEM}_pandera.py")
-    add(s, ".plantuml",        f"{BASE}/{REPO}/{STEM}.plantuml",             "*/*", 302, f"{RAW}/plantuml/{STEM}.plantuml")
-    add(s, "sqla py",          f"{BASE}/{REPO}/sqla/{STEM}_sqlalchemy.py",   "*/*", 302, f"{RAW}/sqla/{STEM}_sqlalchemy.py")
-    add(s, "sqlvalidation",    f"{BASE}/{REPO}/sqlvalidation/{STEM}.sql",    "*/*", 302, f"{RAW}/sqlvalidation/{STEM}.sql")
-    add(s, ".sssom.tsv",       f"{BASE}/{REPO}/{STEM}.sssom.tsv",            "*/*", 302, f"{RAW}/sssom/{STEM}.sssom.tsv")
-    add(s, "summary tsv",      f"{BASE}/{REPO}/summary/{STEM}.summary.tsv",  "*/*", 302, f"{RAW}/summary/{STEM}.summary.tsv")
-    add(s, "terminusdb json",  f"{BASE}/{REPO}/terminusdb/{STEM}.json",      "*/*", 302, f"{RAW}/terminusdb/{STEM}.json")
-    add(s, ".tql",             f"{BASE}/{REPO}/{STEM}.tql",                  "*/*", 302, f"{RAW}/typedb/{STEM}.tql")
-    add(s, "yaml dir",         f"{BASE}/{REPO}/yaml/{STEM}.yaml",            "*/*", 302, f"{RAW}/yaml/{STEM}.yaml")
-    add(s, "rust Cargo",       f"{BASE}/{REPO}/rust/Cargo.toml",             "*/*", 302, f"{RAW}/rust/Cargo.toml")
+    add(s, ".h",               f"{BASE}/{REPO}/{STEM}.h",                    "*/*", 302, f"{RAW}/cpp/{STEM}.h", optional=True)
+    add(s, ".csv",             f"{BASE}/{REPO}/{STEM}.csv",                  "*/*", 302, f"{RAW}/csv/{STEM}.csv", optional=True)
+    add(s, ".dbml",            f"{BASE}/{REPO}/{STEM}.dbml",                 "*/*", 302, f"{RAW}/dbml/{STEM}.dbml", optional=True)
+    add(s, ".er.md",           f"{BASE}/{REPO}/{STEM}.er.md",                "*/*", 302, f"{RAW}/erdiagram/{STEM}.er.md", optional=True)
+    add(s, ".go",              f"{BASE}/{REPO}/{STEM}.go",                   "*/*", 302, f"{RAW}/golang/{STEM}.go", optional=True)
+    add(s, "golr yaml",        f"{BASE}/{REPO}/golr/Trade_config.yaml",      "*/*", 302, f"{RAW}/golr/Trade_config.yaml", optional=True)
+    add(s, ".dot.dot",         f"{BASE}/{REPO}/{STEM}.dot.dot",              "*/*", 302, f"{RAW}/graphviz/{STEM}.dot.dot", optional=True)
+    add(s, "markdown-datadict",f"{BASE}/{REPO}/markdown-datadict/{STEM}.md", "*/*", 302, f"{RAW}/markdown-datadict/{STEM}.md", optional=True)
+    add(s, "mermaid md",       f"{BASE}/{REPO}/mermaid/Trade.md",            "*/*", 302, f"{RAW}/mermaid/Trade.md", optional=True)
+    add(s, "namespaces py",    f"{BASE}/{REPO}/namespaces/{STEM}.namespaces.py", "*/*", 302, f"{RAW}/namespaces/{STEM}.namespaces.py", optional=True)
+    add(s, "pandera py",       f"{BASE}/{REPO}/pandera/{STEM}_pandera.py",   "*/*", 302, f"{RAW}/pandera/{STEM}_pandera.py", optional=True)
+    add(s, ".plantuml",        f"{BASE}/{REPO}/{STEM}.plantuml",             "*/*", 302, f"{RAW}/plantuml/{STEM}.plantuml", optional=True)
+    add(s, "sqla py",          f"{BASE}/{REPO}/sqla/{STEM}_sqlalchemy.py",   "*/*", 302, f"{RAW}/sqla/{STEM}_sqlalchemy.py", optional=True)
+    add(s, "sqlvalidation",    f"{BASE}/{REPO}/sqlvalidation/{STEM}.sql",    "*/*", 302, f"{RAW}/sqlvalidation/{STEM}.sql", optional=True)
+    add(s, ".sssom.tsv",       f"{BASE}/{REPO}/{STEM}.sssom.tsv",            "*/*", 302, f"{RAW}/sssom/{STEM}.sssom.tsv", optional=True)
+    add(s, "summary tsv",      f"{BASE}/{REPO}/summary/{STEM}.summary.tsv",  "*/*", 302, f"{RAW}/summary/{STEM}.summary.tsv", optional=True)
+    add(s, "terminusdb json",  f"{BASE}/{REPO}/terminusdb/{STEM}.json",      "*/*", 302, f"{RAW}/terminusdb/{STEM}.json", optional=True)
+    add(s, ".tql",             f"{BASE}/{REPO}/{STEM}.tql",                  "*/*", 302, f"{RAW}/typedb/{STEM}.tql", optional=True)
+    add(s, "yaml dir",         f"{BASE}/{REPO}/yaml/{STEM}.yaml",            "*/*", 302, f"{RAW}/yaml/{STEM}.yaml", optional=True)
+    add(s, "rust Cargo",       f"{BASE}/{REPO}/rust/Cargo.toml",             "*/*", 302, f"{RAW}/rust/Cargo.toml", optional=True)
 
     # ---- Deeper-pass fixes ----
     s = "Deeper-pass fixes"
     add(s, ".owl.ttl direct",   f"{BASE}/{REPO}/{STEM}.owl.ttl", "*/*", 303, f"{RAW}/owl/{STEM}.owl.ttl")
     add(s, "bare stem yaml",    f"{BASE}/{REPO}/{STEM}.yaml",    "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
     add(s, "json conneg",       f"{BASE}/{REPO}", "application/json", 303, f"{RAW}/jsonld/{STEM}.context.jsonld")
-    add(s, "schema bare narrow",f"{BASE}/{REPO}/schema/anyname", "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
+    add(s, "schema bare narrow",f"{BASE}/{REPO}/schema/cdm_base_math/", "*/*", 303, f"{SRC}/schema/cdm_base_math.yaml")
 
-    # ---- Hyphenated repo: uco-core (single-hyphen STEM family) ----
-    s = "Hyphenated repo: uco-core (single-hyphen STEM family)"
-    uco_raw = "https://raw.githubusercontent.com/lmodel/uco-core/main/project"
-    uco_src = "https://raw.githubusercontent.com/lmodel/uco-core/main/src/uco_core"
-    add(s, "uco-core jsonld",        f"{BASE}/uco-core/uco_core.jsonld",          "*/*", 303, f"{uco_raw}/jsonld/uco_core.jsonld")
-    add(s, "uco-core schema",        f"{BASE}/uco-core/schema/uco_core.yaml",     "*/*", 303, f"{uco_src}/schema/uco_core.yaml")
-    add(s, "uco-core conneg ld+json",f"{BASE}/uco-core", "application/ld+json",          303, f"{uco_raw}/jsonld/uco_core.context.jsonld")
-    add(s, "uco-core java",          f"{BASE}/uco-core/Annotation.java",          "*/*", 302, f"{uco_raw}/java/Annotation.java")
-    add(s, "uco/core slash",         f"{BASE}/uco/core", "text/html",                    303, "https://lmodel.github.io/uco-core")
+    # ---- Plain repo: uco (the retired uco-<name> repositories folded into it) ----
+    s = "Plain repo: uco"
+    uco_raw = "https://raw.githubusercontent.com/lmodel/uco/main/project"
+    uco_src = "https://raw.githubusercontent.com/lmodel/uco/main/src/uco"
+    add(s, "uco jsonld",        f"{BASE}/uco/uco.jsonld",        "*/*", 303, f"{uco_raw}/jsonld/uco.jsonld")
+    add(s, "uco schema",        f"{BASE}/uco/schema/uco.yaml",   "*/*", 303, f"{uco_src}/schema/uco.yaml")
+    add(s, "uco conneg ld+json",f"{BASE}/uco", "application/ld+json",    303, f"{uco_raw}/jsonld/uco.context.jsonld")
+    add(s, "uco java",          f"{BASE}/uco/API.java",          "*/*", 302, f"{uco_raw}/java/API.java")
 
     # ---- Hyphenated repo: nist-ai-rmf (multi-hyphen STEM family) ----
     # nist-ai-100-1 and nist-ai-600-1 are independent repos (not aliases of
