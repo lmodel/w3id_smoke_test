@@ -45,8 +45,8 @@ ONLY = os.environ.get("ONLY", "")
 REPO = "common-domain-model"
 STEM = "common_domain_model"
 BRANCH = "master"
-RAW = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/project"
-SRC = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/src/{STEM}"
+RAW = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/.linkml/project"
+SRC = f"https://raw.githubusercontent.com/lmodel/{REPO}/{BRANCH}/.linkml/src/{STEM}"
 
 
 @dataclass
@@ -139,7 +139,7 @@ def lmodel_cases() -> list[Case]:
     add(s, "cdm text/yaml",     f"{BASE}/{REPO}", "text/yaml",               303, f"{SRC}/schema/{STEM}.yaml")
     add(s, "cdm html",          f"{BASE}/{REPO}", "text/html",               303, f"https://lmodel.github.io/{REPO}")
     add(s, "cdm */*",           f"{BASE}/{REPO}", "*/*",                     302, f"https://lmodel.github.io/{REPO}")
-    add(s, "cdm unsupported",   f"{BASE}/{REPO}", "application/zip",         406, None)
+    add(s, "cdm unsupported",   f"{BASE}/{REPO}", "application/zip",         302, None)
 
     # ---- Conneg (trailing slash) ----
     s = "Conneg (trailing slash)"
@@ -154,22 +154,22 @@ def lmodel_cases() -> list[Case]:
     # ---- Schema routes ----
     s = "Schema routes"
     add(s, "schema yaml",       f"{BASE}/{REPO}/schema/{STEM}.yaml", "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
-    add(s, "schema bare path",  f"{BASE}/{REPO}/schema/anything",    "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
+    add(s, "schema bare path",  f"{BASE}/{REPO}/schema/anything",    "*/*", 303, f"{SRC}/schema/anything.yaml")
     add(
         s,
-        "dpvs nested bare schema path",
-        f"{BASE}/dpvs/schema/modules/consent",
+        "dpv sub-schema bare path",
+        f"{BASE}/dpv/schema/dpv_risk",
         "*/*",
         303,
-        "https://github.com/lmodel/dpvs/blob/main/src/dpvs/schema/modules/consent.yaml",
+        "https://raw.githubusercontent.com/lmodel/dpv/main/src/dpv/schema/dpv_risk.yaml",
     )
     add(
         s,
-        "dpvs nested with trailing slash",
-        f"{BASE}/dpvs/schema/modules/consent/",
+        "dpv sub-schema trailing slash",
+        f"{BASE}/dpv/schema/dpv_risk/",
         "*/*",
         303,
-        "https://github.com/lmodel/dpvs/blob/main/src/dpvs/schema/modules/consent.yaml",
+        "https://raw.githubusercontent.com/lmodel/dpv/main/src/dpv/schema/dpv_risk.yaml",
     )
 
     # ---- Multi-file schema (regression) ----
@@ -226,17 +226,16 @@ def lmodel_cases() -> list[Case]:
     add(s, ".owl.ttl direct",   f"{BASE}/{REPO}/{STEM}.owl.ttl", "*/*", 303, f"{RAW}/owl/{STEM}.owl.ttl")
     add(s, "bare stem yaml",    f"{BASE}/{REPO}/{STEM}.yaml",    "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
     add(s, "json conneg",       f"{BASE}/{REPO}", "application/json", 303, f"{RAW}/jsonld/{STEM}.context.jsonld")
-    add(s, "schema bare narrow",f"{BASE}/{REPO}/schema/anyname", "*/*", 303, f"{SRC}/schema/{STEM}.yaml")
+    add(s, "schema bare narrow",f"{BASE}/{REPO}/schema/anyname", "*/*", 303, f"{SRC}/schema/anyname.yaml")
 
-    # ---- Hyphenated repo: uco-core (single-hyphen STEM family) ----
-    s = "Hyphenated repo: uco-core (single-hyphen STEM family)"
-    uco_raw = "https://raw.githubusercontent.com/lmodel/uco-core/main/project"
-    uco_src = "https://raw.githubusercontent.com/lmodel/uco-core/main/src/uco_core"
-    add(s, "uco-core jsonld",        f"{BASE}/uco-core/uco_core.jsonld",          "*/*", 303, f"{uco_raw}/jsonld/uco_core.jsonld")
-    add(s, "uco-core schema",        f"{BASE}/uco-core/schema/uco_core.yaml",     "*/*", 303, f"{uco_src}/schema/uco_core.yaml")
-    add(s, "uco-core conneg ld+json",f"{BASE}/uco-core", "application/ld+json",          303, f"{uco_raw}/jsonld/uco_core.context.jsonld")
-    add(s, "uco-core java",          f"{BASE}/uco-core/Annotation.java",          "*/*", 302, f"{uco_raw}/java/Annotation.java")
-    add(s, "uco/core slash",         f"{BASE}/uco/core", "text/html",                    303, "https://lmodel.github.io/uco-core")
+    # ---- Plain repo: uco (the retired uco-<name> repositories folded into it) ----
+    s = "Plain repo: uco"
+    uco_raw = "https://raw.githubusercontent.com/lmodel/uco/main/project"
+    uco_src = "https://raw.githubusercontent.com/lmodel/uco/main/src/uco"
+    add(s, "uco jsonld",        f"{BASE}/uco/uco.jsonld",        "*/*", 303, f"{uco_raw}/jsonld/uco.jsonld")
+    add(s, "uco schema",        f"{BASE}/uco/schema/uco.yaml",   "*/*", 303, f"{uco_src}/schema/uco.yaml")
+    add(s, "uco conneg ld+json",f"{BASE}/uco", "application/ld+json",    303, f"{uco_raw}/jsonld/uco.context.jsonld")
+    add(s, "uco java",          f"{BASE}/uco/API.java",          "*/*", 302, f"{uco_raw}/java/API.java")
 
     # ---- Hyphenated repo: nist-ai-rmf (multi-hyphen STEM family) ----
     # nist-ai-100-1 and nist-ai-600-1 are independent repos (not aliases of
